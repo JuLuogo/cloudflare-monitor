@@ -5,7 +5,7 @@
 ### 1. 准备工作
 
 确保你的代码仓库中包含以下文件（已自动生成）：
-- `edge-functions/data/analytics.json.js`: 适配 EdgeOne Pages 的 Serverless 函数目录。
+- `edge-functions/data/[[params]].js`: 适配 EdgeOne Pages 的 Serverless 函数（使用动态路由）。
 - `functions/data/analytics.json.js`: 适配 Cloudflare Pages 的 Serverless 函数目录。
 - `web/public/_redirects`: 用于处理 SPA 路由重写规则（将所有路径指向 index.html）。
 
@@ -26,12 +26,20 @@
 
 ### 3. 路由规则 (重要)
 
-本项目使用 `web/public/_redirects` 文件来定义路由规则，EdgeOne Pages 会自动识别：
+本项目使用了两种路由机制来确保兼容性：
+
+1.  **EdgeOne Pages (Edge Functions)**:
+    使用 `edge-functions/data/[[params]].js` 动态路由。任何对 `/data/*` 的请求都会被此函数捕获并处理。这是因为 EdgeOne Pages 的函数路由优先级高于静态资源。
+
+2.  **SPA 路由重写**:
+    使用 `web/public/_redirects` 文件处理前端路由：
 
 ```text
 # SPA Fallback: 将所有未匹配的请求重写到 index.html
 /* /index.html 200
 ```
+
+*注意：`edge-functions` (EdgeOne) 或 `functions` (Cloudflare) 目录下的 Serverless 函数具有更高的优先级，因此 `/data/analytics.json` 会正确地由函数处理，而不会被重写到 index.html。*
 
 ### 4. 本地开发与调试
 
