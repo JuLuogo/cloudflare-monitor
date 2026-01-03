@@ -28,23 +28,40 @@ function AppContent() {
     // 使用相对路径，通过nginx反向代理访问
     // 添加时间戳防止缓存
     const timestamp = new Date().getTime();
-    axios
-      .get(process.env.NODE_ENV === 'production' 
+    // 优先尝试读取静态文件，如果失败则尝试调用API
+    const dataUrl = process.env.NODE_ENV === 'production' 
         ? `/data/analytics.json?t=${timestamp}` 
-        : `/data/analytics.json?t=${timestamp}`)
+        : `/data/analytics.json?t=${timestamp}`;
+
+    axios.get(dataUrl)
       .then((res) => {
-        console.log('API Response:', res.data); // 添加调试日志
-        setAccounts(res.data.accounts || []);
-        setError(null);
+        console.log('API Response (JSON File):', res.data);
+        if (res.data && res.data.accounts) {
+          setAccounts(res.data.accounts);
+          setError(null);
+        } else {
+          throw new Error('Invalid data format');
+        }
       })
-      .catch((error) => {
-        console.error('API Error:', error);
-        setError(t('loadError'));
-        // 如果数据文件不存在，显示提示信息
-        console.log('请确保后端API正在运行并已生成数据文件');
+      .catch((err1) => {
+        console.warn('Failed to load static JSON, trying Edge Function API...', err1);
+        // 如果静态文件加载失败，尝试直接调用 Edge Function
+        axios.get(`/data/api?t=${timestamp}`)
+          .then(res => {
+             console.log('API Response (Edge Function):', res.data);
+             setAccounts(res.data.accounts || []);
+             setError(null);
+          })
+          .catch(err2 => {
+            console.error('All data sources failed:', err2);
+            setError(t('loadError'));
+          })
+          .finally(() => setLoading(false));
       })
       .finally(() => {
-        setLoading(false);
+        // 如果第一个请求成功了，这里也会执行，但 loading 状态由第一个请求控制可能更好
+        // 这里为了简单，如果第一个请求成功就不等待第二个了
+        if (!error) setLoading(false);
       });
   }, [t]);
 

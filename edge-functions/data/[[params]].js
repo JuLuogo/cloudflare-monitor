@@ -1,4 +1,19 @@
-export async function onRequestGet(context) {
+export async function onRequest(context) {
+  // 同时支持 GET 和 POST
+  if (context.request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+  
+  return await handleRequest(context);
+}
+
+async function handleRequest(context) {
   const { env } = context;
 
   // 配置加载函数
