@@ -27,7 +27,7 @@ function AppContent() {
   useEffect(() => {
     // 使用相对路径，通过nginx反向代理访问
     axios
-      .get('/data/analytics.json')
+      .get(process.env.NODE_ENV === 'production' ? '/data/analytics.json' : '/data/analytics.json')
       .then((res) => {
         console.log('API Response:', res.data); // 添加调试日志
         setAccounts(res.data.accounts || []);

@@ -15,9 +15,9 @@
 2. 点击 **新建项目** -> **连接 Git 仓库**。
 3. 选择 `cloudflare-monitor` 仓库。
 4. **构建配置**:
-   - **框架预设**: Create React App
    - **构建命令**: `npm run build`
    - **输出目录**: `web/build`
+   - **重要**: 请确保 **项目根目录 (Root Directory)** 保持为空（即使用仓库根目录），不要设置为 `web`，否则无法识别 `edge-functions`。
 5. **环境变量**:
    在部署设置或项目设置中添加环境变量：
    - `CF_TOKENS`: 你的 Cloudflare API Token
