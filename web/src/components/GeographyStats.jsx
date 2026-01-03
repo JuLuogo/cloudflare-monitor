@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import WorldMap from './WorldMap';
 
 const GeographyStats = ({ data, formatNumber, formatBytes }) => {
   const { t } = useLanguage();
@@ -164,6 +165,10 @@ const GeographyStats = ({ data, formatNumber, formatBytes }) => {
         <h2>{t('geographyStats')}</h2>
         <p className="section-subtitle">{t('topCountriesRegions')}</p>
       </div>
+
+      {/* 世界地图 - 仅在大屏幕显示 */}
+      {!isMobile && <WorldMap data={data} />}
+
       {/* 合并的双柱状图 */}
       <div className="chart-container">
         <h3>{t('trafficByCountry')}</h3>

@@ -359,6 +359,7 @@ async function updateData() {
                         requests
                         threats
                         clientCountryName
+                        clientCountryAlpha2
                       }
                     }
                   }
@@ -518,10 +519,11 @@ async function updateData() {
               if (record.sum?.countryMap && Array.isArray(record.sum.countryMap)) {
                 record.sum.countryMap.forEach(countryData => {
                   const country = countryData.clientCountryName;
+                  const alpha2 = countryData.clientCountryAlpha2;
                   if (country && country !== 'Unknown' && country !== '') {
                     if (!countryStats[country]) {
                       countryStats[country] = {
-                        dimensions: { clientCountryName: country },
+                        dimensions: { clientCountryName: country, clientCountryAlpha2: alpha2 },
                         sum: { requests: 0, bytes: 0, threats: 0 }
                       };
                     }
