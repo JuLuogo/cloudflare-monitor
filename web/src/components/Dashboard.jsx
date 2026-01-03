@@ -270,7 +270,7 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
       />
 
       {/* Workers 用量统计 */}
-      {accounts && accounts.some(acc => acc.workers) && (
+      {accounts && accounts.some(acc => acc.workers || acc.workersError) && (
         <WorkersStats accounts={accounts} />
       )}
 

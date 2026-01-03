@@ -265,18 +265,25 @@ async function handleRequest(context) {
     if (acc.accountId) {
       try {
         const today = new Date().toISOString().slice(0, 10);
+        const startDate = new Date();
+        startDate.setHours(0, 0, 0, 0);
+        const start = startDate.toISOString();
+        const end = new Date().toISOString();
         const workersQuery = {
           query: `
-            query($accountTag: string, $date: Date) {
+            query($accountTag: String!, $start: Time!, $end: Time!) {
               viewer {
                 accounts(filter: {accountTag: $accountTag}) {
-                  workersInvocationsAdaptive(filter: { datetime_geq: $date, datetime_leq: $date }, limit: 100) {
+                  workersInvocationsAdaptive(
+                    filter: { datetime_geq: $start, datetime_leq: $end },
+                    limit: 100
+                  ) {
                     sum { requests errors }
                   }
                 }
               }
             }`,
-          variables: { accountTag: acc.accountId, date: today }
+          variables: { accountTag: acc.accountId, start, end }
         };
 
         const wRes = await fetch('https://api.cloudflare.com/client/v4/graphql', {
@@ -285,7 +292,9 @@ async function handleRequest(context) {
           body: JSON.stringify(workersQuery)
         }).then(r => r.json());
 
-        if (wRes.data?.viewer?.accounts?.[0]) {
+        if (wRes.errors) {
+          accData.workersError = wRes.errors[0]?.message || 'Workers数据查询失败';
+        } else if (wRes.data?.viewer?.accounts?.[0]) {
           const accountData = wRes.data.viewer.accounts[0];
           const wStats = accountData.workersInvocationsAdaptive?.[0]?.sum || { requests: 0, errors: 0 };
           accData.workers = {
@@ -293,8 +302,12 @@ async function handleRequest(context) {
             errors: wStats.errors || 0,
             limit: 100000
           };
+        } else {
+          accData.workersError = 'Workers数据为空';
         }
-      } catch (e) {}
+      } catch (e) {
+        accData.workersError = e.message;
+      }
     }
 
     payload.accounts.push(accData);

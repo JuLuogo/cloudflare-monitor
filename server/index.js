@@ -591,13 +591,19 @@ async function updateData() {
       if (acc.accountId) {
         try {
           console.log(`    正在获取账户 ${acc.name} 的Workers/Pages数据...`);
-          const today = new Date().toISOString().slice(0, 10);
+          const startDate = new Date();
+          startDate.setHours(0, 0, 0, 0);
+          const start = startDate.toISOString();
+          const end = new Date().toISOString();
           
           const workersQuery = `
-            query($accountTag: string, $date: Date) {
+            query($accountTag: String!, $start: Time!, $end: Time!) {
               viewer {
                 accounts(filter: {accountTag: $accountTag}) {
-                  workersInvocationsAdaptive(filter: { datetime_geq: $date, datetime_leq: $date }, limit: 100) {
+                  workersInvocationsAdaptive(
+                    filter: { datetime_geq: $start, datetime_leq: $end },
+                    limit: 100
+                  ) {
                     sum { requests errors }
                   }
                 }
@@ -617,7 +623,8 @@ async function updateData() {
               query: workersQuery, 
               variables: { 
                 accountTag: acc.accountId, 
-                date: today 
+                start, 
+                end 
               } 
             },
             {
@@ -626,7 +633,10 @@ async function updateData() {
             }
           );
           
-          if (wRes.data.data?.viewer?.accounts?.[0]) {
+          if (wRes.data.errors) {
+             console.warn(`    Workers数据错误:`, wRes.data.errors);
+             accData.workersError = wRes.data.errors[0]?.message || 'Workers数据查询失败';
+          } else if (wRes.data.data?.viewer?.accounts?.[0]) {
              const accountData = wRes.data.data.viewer.accounts[0];
              const wStats = accountData.workersInvocationsAdaptive?.[0]?.sum || { requests: 0, errors: 0 };
              
@@ -637,14 +647,12 @@ async function updateData() {
              };
              console.log(`    Workers数据: ${accData.workers.requests} 请求`);
           } else {
-             if (wRes.data.errors) {
-               console.warn(`    Workers数据获取失败: ${wRes.data.errors[0]?.message}`);
-               accData.workersError = wRes.data.errors[0]?.message;
-             }
+             accData.workersError = 'Workers数据为空';
           }
-
+ 
         } catch (e) {
           console.warn(`    Workers数据请求异常: ${e.message}`);
+          accData.workersError = e.message;
         }
       }
 

@@ -21,7 +21,7 @@ const WorkersStats = ({ accounts }) => {
     barBg: isDarkMode ? '#4b5563' : '#e5e7eb'
   };
 
-  const hasWorkersData = accounts.some(acc => acc.workers);
+  const hasWorkersData = accounts.some(acc => acc.workers || acc.workersError);
 
   if (!hasWorkersData) return null;
 
@@ -34,7 +34,35 @@ const WorkersStats = ({ accounts }) => {
         gap: '20px' 
       }}>
         {accounts.map(account => {
-          if (!account.workers) return null;
+          if (!account.workers && !account.workersError) return null;
+          
+          if (account.workersError) {
+            return (
+              <div key={account.name} className="worker-card" style={{
+                backgroundColor: themeColors.bg,
+                padding: '20px',
+                borderRadius: '12px',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                border: `1px solid ${themeColors.border}`
+              }}>
+                <div className="worker-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: themeColors.text }}>{account.name}</h3>
+                  <span style={{ 
+                    backgroundColor: '#ef4444', 
+                    color: 'white', 
+                    padding: '2px 8px', 
+                    borderRadius: '12px',
+                    fontSize: '0.8rem'
+                  }}>
+                    Error
+                  </span>
+                </div>
+                <div style={{ color: themeColors.subText }}>
+                  {account.workersError}
+                </div>
+              </div>
+            );
+          }
           
           const { requests, limit } = account.workers;
           const percentage = Math.min(100, (requests / limit) * 100).toFixed(1);
