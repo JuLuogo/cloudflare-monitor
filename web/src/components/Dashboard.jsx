@@ -3,6 +3,8 @@ import StatsCards from './StatsCards';
 import CacheStats from './CacheStats';
 import GeographyStats from './GeographyStats';
 import LineChart from './LineChart';
+import StatusChart from './StatusChart';
+import ProtocolChart from './ProtocolChart';
 import LanguageSwitch from './LanguageSwitch';
 import ThemeSwitch from './ThemeSwitch';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -274,6 +276,20 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
           formatNumber={formatNumber}
           formatBytes={formatBytes}
         />
+      )}
+
+      {/* 状态码和协议分布 - 仅在单日数据时显示 (因为后端目前只查了单日范围的聚合) */}
+      {selectedPeriod === '1day' && accounts && (
+        <div className="charts-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px', marginTop: '20px' }}>
+          {accounts.map(account => account.zones?.map(zone => (
+            <React.Fragment key={zone.domain}>
+              {zone.status && zone.status.length > 0 && <StatusChart data={zone.status} />}
+              {(zone.ssl?.length > 0 || zone.http?.length > 0) && (
+                <ProtocolChart sslData={zone.ssl} httpData={zone.http} />
+              )}
+            </React.Fragment>
+          )))}
+        </div>
       )}
 
       {/* 图表区域 */}

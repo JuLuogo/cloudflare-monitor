@@ -366,8 +366,53 @@ async function updateData() {
               }
             }`;
 
-          // 并行获取天级、小时级和地理位置数据
-          const [daysRes, hoursRes, geoRes] = await Promise.all([
+          // 新增：状态码、SSL、HTTP协议分布查询
+          const distQuery = `
+            query($zone: String!, $since: Date!, $until: Date!) {
+              viewer {
+                zones(filter: {zoneTag: $zone}) {
+                  status: httpRequests1dGroups(
+                    filter: {date_geq: $since, date_leq: $until}
+                    limit: 15
+                    orderBy: [sum_requests_DESC]
+                  ) {
+                    dimensions {
+                      responseStatus
+                    }
+                    sum {
+                      requests
+                    }
+                  }
+                  ssl: httpRequests1dGroups(
+                    filter: {date_geq: $since, date_leq: $until}
+                    limit: 10
+                    orderBy: [sum_requests_DESC]
+                  ) {
+                    dimensions {
+                      clientSSLProtocol
+                    }
+                    sum {
+                      requests
+                    }
+                  }
+                  http: httpRequests1dGroups(
+                    filter: {date_geq: $since, date_leq: $until}
+                    limit: 10
+                    orderBy: [sum_requests_DESC]
+                  ) {
+                    dimensions {
+                      clientHTTPProtocol
+                    }
+                    sum {
+                      requests
+                    }
+                  }
+                }
+              }
+            }`;
+
+          // 并行获取所有数据
+          const [daysRes, hoursRes, geoRes, distRes] = await Promise.all([
             axios.post(
               'https://api.cloudflare.com/client/v4/graphql',
               { query: daysQuery, variables: { zone: z.zone_id, since: daysSince, until: daysUntil } },
@@ -400,10 +445,29 @@ async function updateData() {
                 },
                 timeout: 30000
               }
+            ),
+            axios.post(
+              'https://api.cloudflare.com/client/v4/graphql',
+              { query: distQuery, variables: { zone: z.zone_id, since: daysSince, until: daysUntil } },
+              {
+                headers: {
+                  'Authorization': `Bearer ${acc.token}`,
+                  'Content-Type': 'application/json'
+                },
+                timeout: 30000
+              }
             )
           ]);
 
-          const zoneData = { domain: z.domain, raw: [], rawHours: [], geography: [] };
+          const zoneData = { 
+            domain: z.domain, 
+            raw: [], 
+            rawHours: [], 
+            geography: [],
+            status: [],
+            ssl: [],
+            http: []
+          };
 
           // 处理天级数据
           if (daysRes.data.errors) {
@@ -480,6 +544,18 @@ async function updateData() {
                 `${d.dimensions.clientCountryName}: ${d.sum.requests}`);
               console.log(`    前5个国家/地区: ${topCountries.join(', ')}`);
             }
+          }
+
+          // 处理分布数据 (Status, SSL, HTTP)
+          if (distRes.data.errors) {
+            console.error(`    Zone ${z.domain} 分布数据API错误:`, distRes.data.errors);
+            // 不阻断，只是记录错误
+          } else if (distRes.data.data?.viewer?.zones?.[0]) {
+            const zData = distRes.data.data.viewer.zones[0];
+            zoneData.status = zData.status || [];
+            zoneData.ssl = zData.ssl || [];
+            zoneData.http = zData.http || [];
+            console.log(`    Zone ${z.domain} 分布数据获取成功 (Status, SSL, HTTP)`);
           }
 
           accData.zones.push(zoneData);

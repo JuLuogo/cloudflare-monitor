@@ -79,7 +79,15 @@ export async function onRequestGet(context) {
     // 注意：Cloudflare API有限制，如果Zone太多可能需要分批处理
     // 这里为了简单，假设Zone数量不多
     const zonePromises = acc.zones.map(async (z) => {
-      const zoneData = { domain: z.domain, raw: [], rawHours: [], geography: [] };
+      const zoneData = { 
+        domain: z.domain, 
+        raw: [], 
+        rawHours: [], 
+        geography: [],
+        status: [],
+        ssl: [],
+        http: []
+      };
 
       try {
         // 1. 准备查询参数
@@ -153,6 +161,54 @@ export async function onRequestGet(context) {
           variables: { zone: z.zone_id, since: geoSince, until: geoUntil }
         };
 
+        // 新增：状态码、SSL、HTTP协议分布查询
+        const distQuery = {
+          query: `
+            query($zone: String!, $since: Date!, $until: Date!) {
+              viewer {
+                zones(filter: {zoneTag: $zone}) {
+                  status: httpRequests1dGroups(
+                    filter: {date_geq: $since, date_leq: $until}
+                    limit: 15
+                    orderBy: [sum_requests_DESC]
+                  ) {
+                    dimensions {
+                      responseStatus
+                    }
+                    sum {
+                      requests
+                    }
+                  }
+                  ssl: httpRequests1dGroups(
+                    filter: {date_geq: $since, date_leq: $until}
+                    limit: 10
+                    orderBy: [sum_requests_DESC]
+                  ) {
+                    dimensions {
+                      clientSSLProtocol
+                    }
+                    sum {
+                      requests
+                    }
+                  }
+                  http: httpRequests1dGroups(
+                    filter: {date_geq: $since, date_leq: $until}
+                    limit: 10
+                    orderBy: [sum_requests_DESC]
+                  ) {
+                    dimensions {
+                      clientHTTPProtocol
+                    }
+                    sum {
+                      requests
+                    }
+                  }
+                }
+              }
+            }`,
+          variables: { zone: z.zone_id, since: daysSince, until: daysUntil }
+        };
+
         // 3. 发起请求
         const fetchCF = async (body) => {
           const res = await fetch('https://api.cloudflare.com/client/v4/graphql', {
@@ -166,10 +222,11 @@ export async function onRequestGet(context) {
           return res.json();
         };
 
-        const [daysRes, hoursRes, geoRes] = await Promise.all([
+        const [daysRes, hoursRes, geoRes, distRes] = await Promise.all([
           fetchCF(daysQuery),
           fetchCF(hoursQuery),
-          fetchCF(geoQuery)
+          fetchCF(geoQuery),
+          fetchCF(distQuery)
         ]);
 
         // 4. 处理数据
@@ -216,6 +273,16 @@ export async function onRequestGet(context) {
           zoneData.geography = Object.values(countryStats)
             .sort((a, b) => b.sum.requests - a.sum.requests)
             .slice(0, 15);
+        }
+
+        // 处理分布数据 (Status, SSL, HTTP)
+        if (distRes.errors) {
+          if (!zoneData.error) zoneData.error = distRes.errors[0]?.message;
+        } else if (distRes.data?.viewer?.zones?.[0]) {
+          const zData = distRes.data.viewer.zones[0];
+          zoneData.status = zData.status || [];
+          zoneData.ssl = zData.ssl || [];
+          zoneData.http = zData.http || [];
         }
 
       } catch (error) {

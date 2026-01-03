@@ -88,6 +88,12 @@ const languages = {
         countryShort: '国家/地区',
         requestsShort: '请求',
         bandwidthShort: '流量',
+
+        // Status & Protocol
+        statusDistribution: '状态码分布',
+        sslProtocol: 'SSL 协议分布',
+        httpProtocol: 'HTTP 协议分布',
+        status: '状态码',
     },
     en: {
         // Dashboard
@@ -175,6 +181,12 @@ const languages = {
         countryShort: 'Country/Region',
         requestsShort: 'Requests',
         bandwidthShort: 'Traffic',
+
+        // Status & Protocol
+        statusDistribution: 'Status Code Distribution',
+        sslProtocol: 'SSL Protocol Distribution',
+        httpProtocol: 'HTTP Protocol Distribution',
+        status: 'Status',
     }
 };
 
