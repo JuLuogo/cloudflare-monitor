@@ -278,8 +278,8 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
         />
       )}
 
-      {/* 状态码和协议分布 - 仅在单日数据时显示 (因为后端目前只查了单日范围的聚合) */}
-      {selectedPeriod === '1day' && accounts && (
+      {/* 状态码和协议分布 - 显示所有视图 (数据基于最近45天聚合) */}
+      {accounts && (
         <div className="charts-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px', marginTop: '20px' }}>
           {accounts.map(account => account.zones?.map(zone => (
             <React.Fragment key={zone.domain}>
