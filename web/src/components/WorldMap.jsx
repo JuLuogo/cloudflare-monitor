@@ -10,6 +10,7 @@ const MAPPING_URL = "https://raw.githubusercontent.com/lukes/ISO-3166-Countries-
 
 const WorldMap = ({ data }) => {
   const { isDarkMode } = useTheme();
+  // eslint-disable-next-line no-unused-vars
   const { t } = useLanguage();
   const [mapping, setMapping] = useState({});
   const [tooltipContent, setTooltipContent] = useState("");
