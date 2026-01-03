@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
 import { scaleLinear } from 'd3-scale';
 import { Tooltip as ReactTooltip } from 'react-tooltip';
@@ -6,38 +6,32 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-const MAPPING_URL = "https://raw.githubusercontent.com/lukes/ISO-3166-Countries-with-Regional-Codes/master/slim-2/slim-2.json";
+// 使用国家名称匹配，无需 ISO 映射
 
 const WorldMap = ({ data }) => {
   const { isDarkMode } = useTheme();
   // eslint-disable-next-line no-unused-vars
   const { t } = useLanguage();
-  const [mapping, setMapping] = useState({});
   const [tooltipContent, setTooltipContent] = useState("");
 
-  // Fetch ISO mapping
-  useEffect(() => {
-    fetch(MAPPING_URL)
-      .then(res => res.json())
-      .then(json => {
-        const map = {};
-        json.forEach(item => {
-          // item['country-code'] is numeric string like "004"
-          // item['alpha-2'] is "AF"
-          // We map numeric ID (from topojson) to alpha-2
-          // TopoJSON IDs often remove leading zeros for some versions, but world-atlas usually keeps them or uses standard numeric.
-          // Let's store both padded and unpadded just in case.
-          const numeric = item['country-code'];
-          const alpha2 = item['alpha-2'];
-          map[numeric] = alpha2;
-          map[parseInt(numeric, 10).toString()] = alpha2; 
-        });
-        setMapping(map);
-      })
-      .catch(err => console.error("Failed to load country mapping", err));
-  }, []);
+  // 纠正常见名称差异（CF -> Natural Earth）
+  const nameFix = useMemo(() => ({
+    'United States': 'United States of America',
+    'Democratic Republic of the Congo': 'Democratic Republic of the Congo',
+    'Republic of the Congo': 'Republic of the Congo',
+    'Côte d’Ivoire': "Côte d'Ivoire",
+    'Cote d\'Ivoire': "Côte d'Ivoire",
+    'Myanmar': 'Myanmar',
+    'Czech Republic': 'Czechia',
+    'North Korea': 'North Korea',
+    'South Korea': 'South Korea',
+    'Moldova': 'Moldova',
+    'Russia': 'Russia',
+    'Viet Nam': 'Vietnam',
+    'Lao PDR': 'Laos',
+  }), []);
 
-  // Process data into a map: alpha2 -> stats
+  // 聚合：按国家名称
   const countryData = useMemo(() => {
     const map = {};
     if (!data) return map;
@@ -53,19 +47,17 @@ const WorldMap = ({ data }) => {
         account.zones.forEach(zone => {
           if (zone.geography) {
             zone.geography.forEach(geo => {
-              // geo.dimensions.clientCountryAlpha2
-              // geo.sum.requests
-              const alpha2 = geo.dimensions.clientCountryAlpha2;
               const name = geo.dimensions.clientCountryName;
               const requests = geo.sum?.requests || geo.count || 0;
               const bytes = geo.sum?.bytes || 0;
 
-              if (alpha2) {
-                if (!map[alpha2]) {
-                  map[alpha2] = { requests: 0, bytes: 0, name };
+              if (name) {
+                const key = name.toLowerCase();
+                if (!map[key]) {
+                  map[key] = { requests: 0, bytes: 0, name };
                 }
-                map[alpha2].requests += requests;
-                map[alpha2].bytes += bytes;
+                map[key].requests += requests;
+                map[key].bytes += bytes;
               }
             });
           }
@@ -96,9 +88,9 @@ const WorldMap = ({ data }) => {
           <Geographies geography={GEO_URL}>
             {({ geographies }) =>
               geographies.map((geo) => {
-                const numericId = geo.id; // "840"
-                const alpha2 = mapping[numericId];
-                const stats = countryData[alpha2];
+                const atlasName = geo.properties.name;
+                const fixedName = nameFix[atlasName] || atlasName;
+                const stats = countryData[(fixedName || '').toLowerCase()];
                 
                 return (
                   <Geography
@@ -106,7 +98,7 @@ const WorldMap = ({ data }) => {
                     geography={geo}
                     onMouseEnter={() => {
                       if (stats) {
-                        setTooltipContent(`${stats.name || alpha2}: ${stats.requests.toLocaleString()} requests`);
+                        setTooltipContent(`${stats.name || fixedName}: ${stats.requests.toLocaleString()} requests`);
                       } else {
                         setTooltipContent(`${geo.properties.name}: 0`);
                       }

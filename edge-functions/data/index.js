@@ -159,9 +159,7 @@ async function handleRequest(context) {
                     orderBy: [date_DESC]
                   ) {
                     dimensions { date }
-                    sum {
-                      countryMap { bytes requests threats clientCountryName clientCountryAlpha2 }
-                    }
+                    sum { countryMap { bytes requests threats clientCountryName } }
                   }
                 }
               }
@@ -233,11 +231,10 @@ async function handleRequest(context) {
             if (record.sum?.countryMap && Array.isArray(record.sum.countryMap)) {
               record.sum.countryMap.forEach(countryData => {
                 const country = countryData.clientCountryName;
-                const alpha2 = countryData.clientCountryAlpha2;
                 if (country && country !== 'Unknown' && country !== '') {
                   if (!countryStats[country]) {
                     countryStats[country] = {
-                      dimensions: { clientCountryName: country, clientCountryAlpha2: alpha2 },
+                      dimensions: { clientCountryName: country },
                       sum: { requests: 0, bytes: 0, threats: 0 }
                     };
                   }
