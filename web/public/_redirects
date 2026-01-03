@@ -1,5 +1,2 @@
-# API Routes
-/data/analytics.json /edge-functions/data/[[params]].js 200
-
 # SPA Fallback
 /* /index.html 200
