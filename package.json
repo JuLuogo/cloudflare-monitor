@@ -1,0 +1,12 @@
+{
+  "name": "cloudflare-monitor-root",
+  "private": true,
+  "scripts": {
+    "build": "cd web && npm install && npm run build",
+    "dev": "cd web && npm start"
+  },
+  "workspaces": [
+    "web",
+    "server"
+  ]
+}

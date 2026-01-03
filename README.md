@@ -95,6 +95,17 @@ accounts:
         zone_id: "你的Zone ID"
 ```
 
+#### 方式 4: ☁️ 部署到 Cloudflare Pages / Tencent EdgeOne Pages (Serverless)
+
+本项目支持部署到 Cloudflare Pages 或腾讯云 EdgeOne Pages，无需独立的服务器，利用 Edge Functions 实时获取数据。
+
+**[📄 查看详细部署文档](./DEPLOY_PAGES.md)**
+
+1. **Fork 本仓库**。
+2. 在 Cloudflare Pages 中连接你的仓库。
+3. 设置构建命令: `npm run build`，输出目录: `web/build`。
+4. 在 Pages 设置中配置环境变量 `CF_TOKENS`, `CF_ZONES` 等。
+
 🎯 **部署完成后**：
 
 - 访问 `http://ip:端口` 查看仪表盘
@@ -226,7 +237,8 @@ docker run -p 80:80 \
 
 ```
 ├── web/                    # 前端React应用
-├── server/                 # 后端API服务
+├── server/                 # 后端API服务 (Node.js)
+├── functions/              # Serverless Functions (Cloudflare Pages)
 ├── .github/workflows/      # GitHub Actions配置
 ├── dockerfile              # Docker构建配置
 ├── nginx.conf.template     # Nginx配置模板
