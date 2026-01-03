@@ -26,8 +26,12 @@ function AppContent() {
 
   useEffect(() => {
     // 使用相对路径，通过nginx反向代理访问
+    // 添加时间戳防止缓存
+    const timestamp = new Date().getTime();
     axios
-      .get(process.env.NODE_ENV === 'production' ? '/data/analytics.json' : '/data/analytics.json')
+      .get(process.env.NODE_ENV === 'production' 
+        ? `/data/analytics.json?t=${timestamp}` 
+        : `/data/analytics.json?t=${timestamp}`)
       .then((res) => {
         console.log('API Response:', res.data); // 添加调试日志
         setAccounts(res.data.accounts || []);

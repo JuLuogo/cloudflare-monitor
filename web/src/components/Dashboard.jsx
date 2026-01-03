@@ -278,19 +278,7 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
         />
       )}
 
-      {/* 状态码和协议分布 - 显示所有视图 (数据基于最近45天聚合) */}
-      {accounts && (
-        <div className="charts-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px', marginTop: '20px' }}>
-          {accounts.map(account => account.zones?.map(zone => (
-            <React.Fragment key={zone.domain}>
-              {zone.status && zone.status.length > 0 && <StatusChart data={zone.status} />}
-              {(zone.ssl?.length > 0 || zone.http?.length > 0) && (
-                <ProtocolChart sslData={zone.ssl} httpData={zone.http} />
-              )}
-            </React.Fragment>
-          )))}
-        </div>
-      )}
+      {/* 状态码和协议分布 - 已移动到下方每个 Zone 的详情中 */}
 
       {/* 图表区域 */}
       <div className="charts-section">
@@ -303,13 +291,42 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
             <div className="zones-grid">
               {account.zones && account.zones.length > 0 ? (
                 account.zones.map((zone) => (
-                  <LineChart
-                    key={zone.domain}
-                    domain={zone.domain}
-                    raw={zone.raw || []}
-                    rawHours={zone.rawHours || []}
-                    selectedPeriod={selectedPeriod}
-                  />
+                  <div key={zone.domain} className="zone-wrapper" style={{ marginBottom: '40px' }}>
+                    <LineChart
+                      domain={zone.domain}
+                      raw={zone.raw || []}
+                      rawHours={zone.rawHours || []}
+                      selectedPeriod={selectedPeriod}
+                    />
+                    
+                    {/* 在每个 Zone 下方显示分析图表 */}
+                    <div className="zone-analysis-row" style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
+                      gap: '20px', 
+                      marginTop: '20px' 
+                    }}>
+                      {/* 调试信息: 如果没有数据，可以在控制台看到 */}
+                      {(() => {
+                        if ((!zone.status || zone.status.length === 0) && (!zone.ssl || zone.ssl.length === 0)) {
+                          console.log(`Zone ${zone.domain} 暂无状态码/协议数据`, zone);
+                        }
+                        return null;
+                      })()}
+
+                      {zone.status && zone.status.length > 0 && (
+                        <div style={{ background: 'var(--card-bg, #fff)', borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                          <StatusChart data={zone.status} />
+                        </div>
+                      )}
+                      
+                      {(zone.ssl?.length > 0 || zone.http?.length > 0) && (
+                        <div style={{ background: 'var(--card-bg, #fff)', borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                          <ProtocolChart sslData={zone.ssl} httpData={zone.http} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))
               ) : (
                 <div style={{ 
