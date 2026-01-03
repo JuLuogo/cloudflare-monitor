@@ -25,44 +25,45 @@ function AppContent() {
   const [selectedPeriod, setSelectedPeriod] = useState('1day'); // 单日、3天、7天
 
   useEffect(() => {
-    // 使用相对路径，通过nginx反向代理访问
-    // 添加时间戳防止缓存
-    const timestamp = new Date().getTime();
-    // 优先尝试读取静态文件，如果失败则尝试调用API
-    const dataUrl = process.env.NODE_ENV === 'production' 
+    let canceled = false;
+    (async () => {
+      setLoading(true);
+      const timestamp = new Date().getTime();
+      const dataUrl = process.env.NODE_ENV === 'production' 
         ? `/data/analytics.json?t=${timestamp}` 
         : `/data/analytics.json?t=${timestamp}`;
-
-    axios.get(dataUrl)
-      .then((res) => {
-        console.log('API Response (JSON File):', res.data);
-        if (res.data && res.data.accounts) {
-          setAccounts(res.data.accounts);
-          setError(null);
+      try {
+        const res = await axios.get(dataUrl);
+        const data = res.data;
+        if (data && data.accounts) {
+          if (!canceled) {
+            setAccounts(data.accounts);
+            setError(null);
+          }
         } else {
           throw new Error('Invalid data format');
         }
-      })
-      .catch((err1) => {
-        console.warn('Failed to load static JSON, trying Edge Function API...', err1);
-        // 如果静态文件加载失败，尝试直接调用 Edge Function
-        axios.get(`/data/api?t=${timestamp}`)
-          .then(res => {
-             console.log('API Response (Edge Function):', res.data);
-             setAccounts(res.data.accounts || []);
-             setError(null);
-          })
-          .catch(err2 => {
-            console.error('All data sources failed:', err2);
+      } catch (err1) {
+        try {
+          const res2 = await axios.get(`/data/api?t=${timestamp}`);
+          if (!canceled) {
+            setAccounts(res2.data.accounts || []);
+            setError(null);
+          }
+        } catch (err2) {
+          if (!canceled) {
             setError(t('loadError'));
-          })
-          .finally(() => setLoading(false));
-      })
-      .finally(() => {
-        // 如果第一个请求成功了，这里也会执行，但 loading 状态由第一个请求控制可能更好
-        // 这里为了简单，如果第一个请求成功就不等待第二个了
-        if (!error) setLoading(false);
-      });
+          }
+        }
+      } finally {
+        if (!canceled) {
+          setLoading(false);
+        }
+      }
+    })();
+    return () => {
+      canceled = true;
+    };
   }, [t]);
 
   if (loading) {
