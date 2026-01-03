@@ -191,7 +191,6 @@ export async function onRequestGet(context) {
                   status: httpRequests1dGroups(
                     filter: {date_geq: $since, date_leq: $until}
                     limit: 15
-                    orderBy: [sum_requests_DESC]
                   ) {
                     dimensions {
                       responseStatus
@@ -203,7 +202,6 @@ export async function onRequestGet(context) {
                   ssl: httpRequests1dGroups(
                     filter: {date_geq: $since, date_leq: $until}
                     limit: 10
-                    orderBy: [sum_requests_DESC]
                   ) {
                     dimensions {
                       clientSSLProtocol
@@ -215,7 +213,6 @@ export async function onRequestGet(context) {
                   http: httpRequests1dGroups(
                     filter: {date_geq: $since, date_leq: $until}
                     limit: 10
-                    orderBy: [sum_requests_DESC]
                   ) {
                     dimensions {
                       clientHTTPProtocol

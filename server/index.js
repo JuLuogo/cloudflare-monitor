@@ -400,7 +400,6 @@ async function updateData() {
                   status: httpRequests1dGroups(
                     filter: {date_geq: $since, date_leq: $until}
                     limit: 15
-                    orderBy: [sum_requests_DESC]
                   ) {
                     dimensions {
                       responseStatus
@@ -412,7 +411,6 @@ async function updateData() {
                   ssl: httpRequests1dGroups(
                     filter: {date_geq: $since, date_leq: $until}
                     limit: 10
-                    orderBy: [sum_requests_DESC]
                   ) {
                     dimensions {
                       clientSSLProtocol
@@ -424,7 +422,6 @@ async function updateData() {
                   http: httpRequests1dGroups(
                     filter: {date_geq: $since, date_leq: $until}
                     limit: 10
-                    orderBy: [sum_requests_DESC]
                   ) {
                     dimensions {
                       clientHTTPProtocol

@@ -273,8 +273,8 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
         <WorkersStats accounts={accounts} />
       )}
 
-      {/* 地理位置统计 - 仅在单日数据时显示且有地理位置数据 */}
-      {selectedPeriod === '1day' && accounts && accounts.some(account => 
+      {/* 地理位置统计 - 在所有视图下只要有数据就显示 */}
+      {accounts && accounts.some(account => 
         account.zones && account.zones.some(zone => zone.geography && zone.geography.length > 0)
       ) && (
         <GeographyStats
@@ -312,13 +312,26 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
                       gap: '20px', 
                       marginTop: '20px' 
                     }}>
-                      {/* 调试信息: 如果没有数据，可以在控制台看到 */}
-                      {(() => {
-                        if ((!zone.status || zone.status.length === 0) && (!zone.ssl || zone.ssl.length === 0)) {
-                          console.log(`Zone ${zone.domain} 暂无状态码/协议数据`, zone);
-                        }
-                        return null;
-                      })()}
+                      {/* 调试信息: 显示无数据提示，方便排查 */}
+                      {(!zone.status || zone.status.length === 0) && (!zone.ssl || zone.ssl.length === 0) && (
+                         <div style={{ 
+                           background: 'var(--card-bg, #fff)', 
+                           borderRadius: '12px', 
+                           padding: '20px', 
+                           boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                           color: 'var(--text-secondary, #666)',
+                           textAlign: 'center',
+                           gridColumn: '1 / -1'
+                         }}>
+                           {/* 显示错误信息(如果有) */}
+                           {zone.error ? (
+                             <p>数据加载失败: {zone.error}</p>
+                           ) : (
+                             <p>暂无详细分析数据 (Status/Protocol)</p>
+                           )}
+                           <small style={{ opacity: 0.7 }}>请确保后端API已成功获取最新数据 (v2.0+)</small>
+                         </div>
+                      )}
 
                       {zone.status && zone.status.length > 0 && (
                         <div style={{ background: 'var(--card-bg, #fff)', borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
