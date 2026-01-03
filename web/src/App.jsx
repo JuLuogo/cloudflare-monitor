@@ -40,6 +40,30 @@ function AppContent() {
             setAccounts(data.accounts);
             setError(null);
           }
+          // 尝试补充 Workers 用量（即使静态文件成功也进行合并）
+          try {
+            const res2 = await axios.get(`/data/api?t=${timestamp}`);
+            const apiAccounts = res2.data?.accounts || [];
+            if (!canceled && Array.isArray(apiAccounts) && apiAccounts.length > 0) {
+              const merged = (data.accounts || []).map(acc => {
+                // 通过账户名匹配
+                let apiAcc = apiAccounts.find(a => a.name === acc.name);
+                // 如果账户名不匹配，尝试通过任意一个 zone 的 domain 进行匹配
+                if (!apiAcc && acc.zones && acc.zones.length > 0) {
+                  const domains = acc.zones.map(z => z.domain);
+                  apiAcc = apiAccounts.find(a => (a.zones || []).some(z => domains.includes(z.domain)));
+                }
+                if (apiAcc?.workers || apiAcc?.workersError) {
+                  return { ...acc, workers: apiAcc.workers, workersError: apiAcc.workersError };
+                }
+                return acc;
+              });
+              setAccounts(merged);
+            }
+          } catch (mergeErr) {
+            // 合并失败不影响整体显示
+            console.warn('Merge workers usage failed:', mergeErr?.message || mergeErr);
+          }
         } else {
           throw new Error('Invalid data format');
         }
