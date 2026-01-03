@@ -94,6 +94,10 @@ const languages = {
         sslProtocol: 'SSL 协议分布',
         httpProtocol: 'HTTP 协议分布',
         status: '状态码',
+
+        // Workers
+        workersStats: 'Workers & Pages 用量',
+        workersQuotaReset: '每日重置 (UTC)',
     },
     en: {
         // Dashboard
@@ -187,6 +191,10 @@ const languages = {
         sslProtocol: 'SSL Protocol Distribution',
         httpProtocol: 'HTTP Protocol Distribution',
         status: 'Status',
+
+        // Workers
+        workersStats: 'Workers & Pages Usage',
+        workersQuotaReset: 'Resets daily (UTC)',
     }
 };
 

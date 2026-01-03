@@ -79,6 +79,27 @@ export async function onRequestGet(context) {
     // 注意：Cloudflare API有限制，如果Zone太多可能需要分批处理
     // 这里为了简单，假设Zone数量不多
     const zonePromises = acc.zones.map(async (z) => {
+      // 尝试获取账户ID（如果尚未获取）
+      if (!acc.accountId) {
+        try {
+          const accountQuery = {
+            query: `query($zone: String!) { viewer { zones(filter: {zoneTag: $zone}) { account { id } } } }`,
+            variables: { zone: z.zone_id }
+          };
+          const accRes = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${acc.token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(accountQuery)
+          }).then(r => r.json());
+          
+          if (accRes.data?.viewer?.zones?.[0]?.account?.id) {
+            acc.accountId = accRes.data.viewer.zones[0].account.id;
+          }
+        } catch (e) {
+          // 忽略错误
+        }
+      }
+
       const zoneData = { 
         domain: z.domain, 
         raw: [], 
@@ -294,6 +315,46 @@ export async function onRequestGet(context) {
     });
 
     accData.zones = await Promise.all(zonePromises);
+    
+    // 获取Workers/Pages统计数据 (每个账户只请求一次)
+    if (acc.accountId) {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const workersQuery = {
+          query: `
+            query($accountTag: string, $date: Date) {
+              viewer {
+                accounts(filter: {accountTag: $accountTag}) {
+                  workersInvocationsAdaptive(filter: { datetime_geq: $date, datetime_leq: $date }, limit: 100) {
+                    sum { requests errors }
+                  }
+                }
+              }
+            }`,
+          variables: { accountTag: acc.accountId, date: today }
+        };
+
+        const wRes = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${acc.token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(workersQuery)
+        }).then(r => r.json());
+
+        if (wRes.data?.viewer?.accounts?.[0]) {
+           const accountData = wRes.data.viewer.accounts[0];
+           const wStats = accountData.workersInvocationsAdaptive?.[0]?.sum || { requests: 0, errors: 0 };
+           
+           accData.workers = {
+             requests: wStats.requests || 0,
+             errors: wStats.errors || 0,
+             limit: 100000
+           };
+        }
+      } catch (e) {
+        // 忽略错误
+      }
+    }
+
     payload.accounts.push(accData);
   }
 

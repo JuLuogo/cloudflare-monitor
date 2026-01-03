@@ -246,9 +246,34 @@ async function updateData() {
       console.log(`  处理账户 ${accIndex + 1}/${CFG.accounts.length}: ${acc.name}`);
       const accData = { name: acc.name, zones: [] };
 
-      for (const [zoneIndex, z] of acc.zones.entries()) {
-        try {
-          console.log(`    处理 Zone ${zoneIndex + 1}/${acc.zones.length}: ${z.domain}`);
+            // 获取账户ID（如果尚未获取）
+          if (!acc.accountId) {
+            try {
+              const accountQuery = `
+                query($zone: String!) {
+                  viewer {
+                    zones(filter: {zoneTag: $zone}) {
+                      account { id }
+                    }
+                  }
+                }
+              `;
+              const accRes = await axios.post(
+                'https://api.cloudflare.com/client/v4/graphql',
+                { query: accountQuery, variables: { zone: z.zone_id } },
+                {
+                  headers: { 'Authorization': `Bearer ${acc.token}`, 'Content-Type': 'application/json' },
+                  timeout: 10000
+                }
+              );
+              if (accRes.data.data?.viewer?.zones?.[0]?.account?.id) {
+                acc.accountId = accRes.data.data.viewer.zones[0].account.id;
+                console.log(`    获取到账户ID: ${acc.accountId}`);
+              }
+            } catch (e) {
+              console.warn(`    无法获取账户ID: ${e.message}`);
+            }
+          }
 
           // 获取天级数据（用于7天和30天显示）
           const daysSince = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10); // 45天前
@@ -572,6 +597,67 @@ async function updateData() {
           });
         }
       }
+      // 5. 获取Workers/Pages统计数据 (每个账户只请求一次)
+      if (acc.accountId) {
+        try {
+          console.log(`    正在获取账户 ${acc.name} 的Workers/Pages数据...`);
+          const today = new Date().toISOString().slice(0, 10);
+          
+          const workersQuery = `
+            query($accountTag: string, $date: Date) {
+              viewer {
+                accounts(filter: {accountTag: $accountTag}) {
+                  workersInvocationsAdaptive(filter: { datetime_geq: $date, datetime_leq: $date }, limit: 100) {
+                    sum { requests errors }
+                  }
+                }
+              }
+            }
+          `;
+          
+          // 注意：Cloudflare Pages的GraphQL Schema可能不同，或者需要特定权限
+          // 这里我们暂时只请求Workers数据，因为Pages数据API通常也是通过类似方式
+          // 实际上，workersInvocationsAdaptive 可能不包含 Pages
+          // 如果需要 Pages，可能需要查询 pagesFunctionsInvocationsAdaptive
+          // 但为了兼容性，我们先尝试标准Workers查询
+
+          const wRes = await axios.post(
+            'https://api.cloudflare.com/client/v4/graphql',
+            { 
+              query: workersQuery, 
+              variables: { 
+                accountTag: acc.accountId, 
+                date: today 
+              } 
+            },
+            {
+              headers: { 'Authorization': `Bearer ${acc.token}`, 'Content-Type': 'application/json' },
+              timeout: 10000
+            }
+          );
+          
+          if (wRes.data.data?.viewer?.accounts?.[0]) {
+             const accountData = wRes.data.data.viewer.accounts[0];
+             const wStats = accountData.workersInvocationsAdaptive?.[0]?.sum || { requests: 0, errors: 0 };
+             
+             accData.workers = {
+               requests: wStats.requests || 0,
+               errors: wStats.errors || 0,
+               limit: 100000 // 默认免费额度
+             };
+             console.log(`    Workers数据: ${accData.workers.requests} 请求`);
+          } else {
+             if (wRes.data.errors) {
+               console.warn(`    Workers数据获取失败: ${wRes.data.errors[0]?.message}`);
+               accData.workersError = wRes.data.errors[0]?.message;
+             }
+          }
+
+        } catch (e) {
+          console.warn(`    Workers数据请求异常: ${e.message}`);
+        }
+      }
+
       payload.accounts.push(accData);
     }
 

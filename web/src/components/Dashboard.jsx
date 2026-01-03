@@ -5,6 +5,7 @@ import GeographyStats from './GeographyStats';
 import LineChart from './LineChart';
 import StatusChart from './StatusChart';
 import ProtocolChart from './ProtocolChart';
+import WorkersStats from './WorkersStats';
 import LanguageSwitch from './LanguageSwitch';
 import ThemeSwitch from './ThemeSwitch';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -266,6 +267,11 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
         formatNumber={formatNumber}
         formatBytes={formatBytes}
       />
+
+      {/* Workers 用量统计 */}
+      {accounts && accounts.some(acc => acc.workers) && (
+        <WorkersStats accounts={accounts} />
+      )}
 
       {/* 地理位置统计 - 仅在单日数据时显示且有地理位置数据 */}
       {selectedPeriod === '1day' && accounts && accounts.some(account => 
