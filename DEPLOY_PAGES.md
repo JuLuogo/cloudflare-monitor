@@ -5,7 +5,8 @@
 ### 1. 准备工作
 
 确保你的代码仓库中包含以下文件（已自动生成）：
-- `functions/data/analytics.json.js`: 处理 API 请求的 Serverless 函数。
+- `edge-functions/data/analytics.json.js`: 适配 EdgeOne Pages 的 Serverless 函数目录。
+- `functions/data/analytics.json.js`: 适配 Cloudflare Pages 的 Serverless 函数目录。
 - `web/public/_redirects`: 用于处理 SPA 路由重写规则（将所有路径指向 index.html）。
 
 ### 2. 部署步骤
@@ -32,7 +33,20 @@
 /* /index.html 200
 ```
 
-*注意：`functions` 目录下的 Serverless 函数具有更高的优先级，因此 `/data/analytics.json` 会正确地由函数处理，而不会被重写到 index.html。*
+### 4. 本地开发与调试
+
+你可以使用 EdgeOne CLI 在本地模拟 Serverless 环境：
+
+1. 安装 CLI:
+   ```bash
+   npm install -g edgeone
+   ```
+
+2. 运行开发服务器:
+   ```bash
+   # 在项目根目录运行
+   edgeone pages dev
+   ```
 
 ---
 

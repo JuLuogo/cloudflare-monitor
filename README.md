@@ -238,7 +238,8 @@ docker run -p 80:80 \
 ```
 ├── web/                    # 前端React应用
 ├── server/                 # 后端API服务 (Node.js)
-├── functions/              # Serverless Functions (Cloudflare Pages)
+├── functions/              # Cloudflare Pages Functions
+├── edge-functions/         # EdgeOne Pages Functions
 ├── .github/workflows/      # GitHub Actions配置
 ├── dockerfile              # Docker构建配置
 ├── nginx.conf.template     # Nginx配置模板
