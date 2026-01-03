@@ -42,7 +42,7 @@ function AppContent() {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
