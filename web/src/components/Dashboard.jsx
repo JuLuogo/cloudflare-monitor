@@ -213,6 +213,7 @@ const Dashboard = ({ accounts, selectedPeriod, onPeriodChange }) => {
         
         {/* 主题和语言控制器 */}
         <div className="header-controls">
+          <a href="https://eo-monitor.0721030.xyz/" target="_blank" rel="noopener noreferrer" className="edgeone-link" style={{ marginRight: '12px', textDecoration: 'none', fontWeight: 600 }}>egdeong</a>
           <ThemeSwitch />
           <LanguageSwitch />
         </div>
